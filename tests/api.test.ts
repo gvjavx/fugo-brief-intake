@@ -69,3 +69,16 @@ describe('admin routes', () => {
     expect(me.body.email).toBe('admin@test.local');
   });
 });
+
+describe('malformed requests', () => {
+  it('answer 400, not 500, for a body that is not JSON', async () => {
+    const res = await request(app).post('/api/briefs').set('Content-Type', 'application/json').send('not json');
+    expect(res.status).toBe(400);
+  });
+
+  it('say "wajib diisi" for fields that are missing entirely', async () => {
+    const res = await request(app).post('/api/briefs').send({});
+    expect(res.body.fields.name).toEqual(['Nama wajib diisi']);
+    expect(res.body.fields.timeline).toEqual(['Target selesai wajib diisi']);
+  });
+});

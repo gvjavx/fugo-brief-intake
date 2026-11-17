@@ -32,20 +32,16 @@ export function todayInJakarta(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(now);
 }
 
+/** Same message whether the field is missing, not a string, or blank. */
+const required = (message: string) => z.string(message).trim().min(1, message);
+
 export const briefInputSchema = z.object({
-  name: z.string().trim().min(1, 'Nama wajib diisi').max(120),
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(1, 'Email wajib diisi')
-    .pipe(z.email('Format email tidak valid')),
-  company: z.string().trim().min(1, 'Nama perusahaan wajib diisi').max(160),
-  needs: z.string().trim().min(10, 'Ceritakan kebutuhan minimal 10 karakter').max(5000),
+  name: required('Nama wajib diisi').max(120),
+  email: required('Email wajib diisi').toLowerCase().pipe(z.email('Format email tidak valid')),
+  company: required('Nama perusahaan wajib diisi').max(160),
+  needs: required('Kebutuhan wajib diisi').min(10, 'Ceritakan kebutuhan minimal 10 karakter').max(5000),
   budget: z.enum(BUDGET_RANGES, 'Pilih salah satu rentang budget'),
-  timeline: z
-    .string()
-    .min(1, 'Target selesai wajib diisi')
+  timeline: required('Target selesai wajib diisi')
     .pipe(z.iso.date('Tanggal tidak valid'))
     .refine((d) => d >= todayInJakarta(), 'Tanggal tidak boleh di masa lalu'),
 });

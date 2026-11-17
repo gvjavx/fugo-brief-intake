@@ -148,6 +148,12 @@ app.use('/api', (_req, res) => {
 });
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  // express.json() marks malformed or oversized bodies with a 4xx status; that is the client's fault.
+  const status = (err as { status?: number }).status;
+  if (status && status >= 400 && status < 500) {
+    res.status(status).json({ error: 'Body request harus JSON yang valid (maks. 50 KB)' });
+    return;
+  }
   console.error(err);
   res.status(500).json({ error: 'Terjadi kesalahan di server. Coba lagi sebentar.' });
 });
