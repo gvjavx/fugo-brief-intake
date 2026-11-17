@@ -34,12 +34,19 @@ export function todayInJakarta(now = new Date()): string {
 
 export const briefInputSchema = z.object({
   name: z.string().trim().min(1, 'Nama wajib diisi').max(120),
-  email: z.string().trim().toLowerCase().pipe(z.email('Format email tidak valid')),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, 'Email wajib diisi')
+    .pipe(z.email('Format email tidak valid')),
   company: z.string().trim().min(1, 'Nama perusahaan wajib diisi').max(160),
   needs: z.string().trim().min(10, 'Ceritakan kebutuhan minimal 10 karakter').max(5000),
   budget: z.enum(BUDGET_RANGES, 'Pilih salah satu rentang budget'),
-  timeline: z.iso
-    .date('Tanggal tidak valid')
+  timeline: z
+    .string()
+    .min(1, 'Target selesai wajib diisi')
+    .pipe(z.iso.date('Tanggal tidak valid'))
     .refine((d) => d >= todayInJakarta(), 'Tanggal tidak boleh di masa lalu'),
 });
 export type BriefInput = z.infer<typeof briefInputSchema>;
