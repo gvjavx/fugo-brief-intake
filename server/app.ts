@@ -100,44 +100,40 @@ admin.get('/briefs', async (req, res) => {
   res.json(await listBriefs(parsed.data));
 });
 
-admin.get('/briefs/:id', async (req, res) => {
-  const id = idParam.safeParse(req.params.id);
+// Every /briefs/:id route needs an existing brief; load it once here and 404 otherwise.
+admin.param('id', async (_req, res, next, raw) => {
+  const id = idParam.safeParse(raw);
   const brief = id.success ? await getBrief(id.data) : undefined;
   if (!brief) {
     res.status(404).json({ error: 'Brief tidak ditemukan' });
     return;
   }
-  res.json(brief);
+  res.locals.brief = brief;
+  next();
+});
+
+admin.get('/briefs/:id', (_req, res) => {
+  res.json(res.locals.brief);
 });
 
 const statusSchema = z.object({ pipeline_status: z.enum(PIPELINE_STATUSES) });
 
 admin.patch('/briefs/:id/status', async (req, res) => {
-  const id = idParam.safeParse(req.params.id);
   const body = statusSchema.safeParse(req.body);
-  if (!id.success || !body.success) {
-    res.status(400).json({ error: 'Status tidak valid' });
+  if (!body.success) {
+    res.status(400).json({ error: 'Status tidak valid', fields: fieldErrors(body.error) });
     return;
   }
-  const brief = await updatePipelineStatus(id.data, body.data.pipeline_status);
-  if (!brief) {
-    res.status(404).json({ error: 'Brief tidak ditemukan' });
-    return;
-  }
-  res.json(brief);
+  res.json(await updatePipelineStatus(res.locals.brief.id, body.data.pipeline_status));
 });
 
-admin.post('/briefs/:id/reprocess', async (req, res) => {
-  const id = idParam.safeParse(req.params.id);
-  if (!id.success || !(await getBrief(id.data))) {
-    res.status(404).json({ error: 'Brief tidak ditemukan' });
-    return;
-  }
-  if (!(await claimForProcessing(id.data))) {
+admin.post('/briefs/:id/reprocess', async (_req, res) => {
+  const { id } = res.locals.brief;
+  if (!(await claimForProcessing(id))) {
     res.status(409).json({ error: 'Brief ini sedang diproses AI' });
     return;
   }
-  waitUntil(processBrief(id.data));
+  waitUntil(processBrief(id));
   res.status(202).json({ ai_status: 'processing' });
 });
 

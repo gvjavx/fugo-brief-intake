@@ -34,10 +34,15 @@ export function Dashboard() {
   }, [priority, category, waitingForAi]);
 
   function setFilter(key: 'priority' | 'category', value: string) {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    setParams(next, { replace: true });
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        return next;
+      },
+      { replace: true },
+    );
   }
 
   return (

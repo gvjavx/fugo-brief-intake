@@ -17,7 +17,7 @@ npm run db:migrate
 npm run dev                   # web http://localhost:5173, API http://localhost:4010
 ```
 
-Atau semuanya di Docker: `GEMINI_API_KEY=... docker compose up`, lalu buka http://localhost:5173.
+Atau semuanya di Docker: `docker compose up`, lalu buka http://localhost:5173. Compose membaca `GEMINI_API_KEY` dari `.env`. Startup pertama sekitar 1 menit karena menjalankan `npm ci` di dalam container.
 
 ```bash
 npm test          # vitest: validasi output AI, validasi form, proteksi route admin
