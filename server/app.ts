@@ -87,8 +87,8 @@ const admin = express.Router();
 admin.use(requireAdmin);
 
 const listQuerySchema = z.object({
-  priority: z.enum(PRIORITIES).optional(),
-  category: z.enum(SERVICE_CATEGORIES).optional(),
+  priority: z.enum(PRIORITIES, 'Prioritas tidak dikenal').optional(),
+  category: z.enum(SERVICE_CATEGORIES, 'Kategori tidak dikenal').optional(),
 });
 
 admin.get('/briefs', async (req, res) => {
@@ -116,7 +116,7 @@ admin.get('/briefs/:id', (_req, res) => {
   res.json(res.locals.brief);
 });
 
-const statusSchema = z.object({ pipeline_status: z.enum(PIPELINE_STATUSES) });
+const statusSchema = z.object({ pipeline_status: z.enum(PIPELINE_STATUSES, 'Status pipeline tidak dikenal') });
 
 admin.patch('/briefs/:id/status', async (req, res) => {
   const body = statusSchema.safeParse(req.body);
