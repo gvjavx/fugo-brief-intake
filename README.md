@@ -2,7 +2,7 @@
 
 MVP tool internal Fugo Creative: calon klien mengisi brief proyek, Gemini merangkum dan memberi prioritas, tim sales memantau semuanya dari dashboard.
 
-- **Live:** _(diisi setelah deploy)_
+- **Live:** https://fugo-brief-intake.vercel.app (dashboard: `/admin`)
 - **Admin:** kredensial dikirim lewat email balasan
 
 ## Menjalankan secara lokal
