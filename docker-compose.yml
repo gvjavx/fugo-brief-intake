@@ -21,7 +21,7 @@ services:
     environment:
       DATABASE_URL: postgres://fugo:fugo@db:5432/fugo
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@fugo.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
       SESSION_SECRET: ${SESSION_SECRET:-local-dev-secret}

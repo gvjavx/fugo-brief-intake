@@ -1,5 +1,5 @@
 import { pool } from './db.js';
-import { AI_MODEL, analyzeBrief } from './ai.js';
+import { AiFailure, analyzeBrief } from './ai.js';
 import { todayInJakarta, type Brief, type BriefInput, type PipelineStatus } from '../shared/brief.js';
 
 const COLUMNS = `id, name, email, company, needs, budget, timeline, pipeline_status,
@@ -46,7 +46,7 @@ export async function updatePipelineStatus(id: number, status: PipelineStatus): 
 
 /**
  * Claims the brief for AI processing. Returns false when another run already holds it.
- * A claim older than 2 minutes counts as abandoned (e.g. the serverless function was killed),
+ * A claim older than 3 minutes (longer than the worst-case retry run) counts as abandoned (e.g. the serverless function was killed),
  * so a stuck brief can always be retried from the dashboard.
  */
 export async function claimForProcessing(id: number): Promise<boolean> {
@@ -54,7 +54,7 @@ export async function claimForProcessing(id: number): Promise<boolean> {
     `UPDATE briefs
      SET ai_status = 'processing', ai_error = NULL, ai_attempts = ai_attempts + 1, updated_at = now()
      WHERE id = $1
-       AND (ai_status <> 'processing' OR updated_at < now() - interval '2 minutes')`,
+       AND (ai_status <> 'processing' OR updated_at < now() - interval '3 minutes')`,
     [id],
   );
   return rowCount === 1;
@@ -65,18 +65,19 @@ export async function processBrief(id: number): Promise<void> {
   try {
     const brief = await getBrief(id);
     if (!brief) return;
-    const result = await analyzeBrief(brief, todayInJakarta());
+    const { result, model } = await analyzeBrief(brief, todayInJakarta());
     await pool.query(
       `UPDATE briefs SET ai_status = 'done', ai_result = $2, ai_model = $3, updated_at = now() WHERE id = $1`,
-      [id, result, AI_MODEL],
+      [id, result, model],
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const model = err instanceof AiFailure ? err.model : null;
     console.error(`AI processing failed for brief ${id}:`, message);
     await pool
       .query(
         `UPDATE briefs SET ai_status = 'failed', ai_error = $2, ai_model = $3, updated_at = now() WHERE id = $1`,
-        [id, message.slice(0, 500), AI_MODEL],
+        [id, message.slice(0, 500), model],
       )
       .catch((dbErr) => console.error(`Could not mark brief ${id} as failed:`, dbErr));
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseAiOutput } from '../server/ai.js';
+import { ApiError } from '@google/genai';
+import { describeAiError, isRetryable, parseAiOutput } from '../server/ai.js';
 
 const valid = {
   summary: 'PT Kopi Senja butuh website company profile dalam 6 minggu.',
@@ -32,5 +33,25 @@ describe('parseAiOutput', () => {
   it('rejects missing fields', () => {
     const { priority: _, ...withoutPriority } = valid;
     expect(() => parseAiOutput(JSON.stringify(withoutPriority))).toThrow('priority');
+  });
+});
+
+describe('Gemini error handling', () => {
+  const apiError = (status: number) => new ApiError({ message: '{"error":{}}', status });
+  const timeout = Object.assign(new Error('This operation was aborted'), { name: 'AbortError' });
+
+  it('retries overload, rate limit and timeout, but not bad requests', () => {
+    expect(isRetryable(apiError(503))).toBe(true);
+    expect(isRetryable(apiError(429))).toBe(true);
+    expect(isRetryable(timeout)).toBe(true);
+    expect(isRetryable(apiError(400))).toBe(false);
+    expect(isRetryable(apiError(404))).toBe(false);
+    expect(isRetryable(new Error('Output LLM bukan JSON yang valid'))).toBe(false);
+  });
+
+  it('turns raw API errors into messages the sales team can act on', () => {
+    expect(describeAiError(apiError(503))).toContain('sibuk');
+    expect(describeAiError(timeout)).toContain('tidak merespons');
+    expect(describeAiError(apiError(404))).toBe('Gemini menolak request (404).');
   });
 });
